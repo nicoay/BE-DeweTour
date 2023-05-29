@@ -11,7 +11,7 @@ type CountryRepository interface {
 	GetCountry(ID int) (models.Country, error)
 	CreateCountry(country models.Country) (models.Country, error)
 	UpdateCountry(country models.Country) (models.Country, error)
-	// DeleteUser(ID int, user models.User) (models.User, error)
+	DeleteCountry(ID int, country models.Country) (models.Country, error)
 }
 
 func RepositoryCountry(db *gorm.DB) *repository {
@@ -42,7 +42,7 @@ func (r *repository) UpdateCountry(country models.Country) (models.Country, erro
 	return country, err
 }
 
-// func (r *repository) DeleteUser(ID int, user models.User) (models.User, error) {
-// 	err := r.db.Delete(&user).Error
-// 	return user, err
-// }
+func (r *repository) DeleteCountry(ID int, country models.Country) (models.Country, error) {
+	err := r.db.Delete(&country).Error
+	return country, err
+}

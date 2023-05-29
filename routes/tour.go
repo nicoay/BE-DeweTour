@@ -2,6 +2,7 @@ package routes
 
 import (
 	"dumbmerch/handlers"
+	"dumbmerch/pkg/middleware"
 	"dumbmerch/pkg/mysql"
 	"dumbmerch/repository"
 
@@ -12,8 +13,8 @@ func ToursRoute(e *echo.Group) {
 	tourRepository := repository.RepositoryTour(mysql.DB)
 	h := handlers.HandleTour(tourRepository)
 	e.GET("/tours", h.FindTours)
-	e.POST("/tour", h.CreateTour)
+	e.POST("/tour", middleware.Auth(middleware.UploadFile(h.CreateTour)))
 	e.GET("/tour/:id", h.GetTour)
-	e.PATCH("/tour/:id", h.UpdateTour)
-	// e.DELETE("/user/:id", h.DeleteUser)
+	e.PATCH("/tour/:id", middleware.Auth(middleware.UploadFile(h.UpdateTour)))
+	e.DELETE("/tour/:id", middleware.Auth(h.DeleteTour))
 }

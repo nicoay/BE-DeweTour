@@ -52,22 +52,6 @@ func (h *handlerCountry) GetCountry(c echo.Context) error {
 	})
 }
 
-// func (h *handlerUser) GetUserById(c echo.Context) error {
-// 	id, _ := strconv.Atoi(c.Param("id"))
-
-// 	user, err := h.UserRepository.GetUserById(id)
-
-// 	if err != nil {
-// 		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
-// 			Code:    http.StatusBadRequest,
-// 			Message: err.Error(),
-// 		})
-// 	}
-// 	return c.JSON(http.StatusOK, dto.SuccessResult{
-// 		Code: http.StatusOK,
-// 		Data: user,
-// 	})
-// }
 
 func (h *handlerCountry) CreateCountry(c echo.Context) error {
 	request := new(countrydto.CreateCountry)
@@ -141,32 +125,32 @@ func (h *handlerCountry) UpdateCountry(c echo.Context) error {
 		Data: convertCountryResponse(data)})
 }
 
-// func (h *handlerUser) DeleteUser(c echo.Context) error {
-// 	id, _ := strconv.Atoi(c.Param("id"))
-// 	user, err := h.UserRepository.GetUserById(id)
+func (h *handlerCountry) DeleteCountry(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id"))
+	country, err := h.CountryRepository.GetCountry(id)
 
-// 	if err != nil {
-// 		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
-// 			Code:    http.StatusBadRequest,
-// 			Message: err.Error(),
-// 		})
-// 	}
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
 
-// 	data, err := h.UserRepository.DeleteUser(id, user)
+	data, err := h.CountryRepository.DeleteCountry(id, country)
 
-// 	if err != nil {
-// 		return c.JSON(http.StatusInternalServerError, dto.ErrorResult{
-// 			Code:    http.StatusBadRequest,
-// 			Message: err.Error(),
-// 		})
-// 	}
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
 
-// 	return c.JSON(http.StatusOK, dto.SuccessResult{
-// 		Code: http.StatusOK,
-// 		Data: convertResponse(data),
-// 	})
+	return c.JSON(http.StatusOK, dto.SuccessResult{
+		Code: http.StatusOK,
+		Data: convertCountryResponse(data),
+	})
 
-// }
+}
 
 func convertCountryResponse(country models.Country) countrydto.CountryResponse {
 	return countrydto.CountryResponse{

@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type Transaction struct {
 	ID         int                  `json:"id" form:"id" gorm:"primary_key:auto_increment"`
 	CounterQty int                  `json:"counter_qty" form:"counter_qty"`
@@ -10,6 +12,8 @@ type Transaction struct {
 	User       UsersProfileResponse `json:"user" form:"user" gorm:"foreignKey:UserID"`
 	TourID     int                  `json:"id_tour"`
 	Tour       TourResponse         `json:"tour" form:"user" gorm:"foreignKey:TourID"`
+	CreatedAt  time.Time            `json:"-"`
+	UpdatedAt  time.Time            `json:"-"`
 }
 type TransactionResponse struct {
 	ID         int          `json:"id"`
@@ -20,6 +24,8 @@ type TransactionResponse struct {
 	UserID     int          `json:"-"`
 	TourID     int          `json:"-"`
 	Tour       TourResponse `json:"tour"`
+	CreatedAt  time.Time    `json:"-"`
+	UpdatedAt  time.Time    `json:"-"`
 }
 
 func (TransactionResponse) TableName() string {

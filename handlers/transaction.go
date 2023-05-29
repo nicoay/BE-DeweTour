@@ -5,6 +5,7 @@ import (
 	transdto "dumbmerch/dto/transaction"
 	"dumbmerch/models"
 	"dumbmerch/repository"
+	"time"
 
 	// "fmt"
 
@@ -15,6 +16,7 @@ import (
 	// "time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 )
 
@@ -77,12 +79,18 @@ func (h *handlerTransaction) GetTransaction(c echo.Context) error {
 // }
 
 func (h *handlerTransaction) CreateTransaction(c echo.Context) error {
-	request := new(transdto.CreateTransaction)
-	if err := c.Bind(request); err != nil {
-		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
-			Code:    http.StatusBadRequest,
-			Message: err.Error(),
-		})
+	dataFile := c.Get("dataFile").(string)
+
+	countryQty, _ := strconv.Atoi(c.FormValue("counter_qty"))
+	total, _ := strconv.Atoi(c.FormValue("total"))
+	tourId, _ := strconv.Atoi(c.FormValue("tour_id"))
+
+	request := transdto.CreateTransaction{
+		CounterQty: countryQty,
+		Total:      total,
+		Status:     c.FormValue("status"),
+		Attachment: dataFile,
+		TourID:     tourId,
 	}
 	validation := validator.New()
 	err := validation.Struct(request)
@@ -103,6 +111,8 @@ func (h *handlerTransaction) CreateTransaction(c echo.Context) error {
 	// 	})
 	// }
 	// fmt.Println(datas)
+	userLogin := c.Get("userLogin")
+	userId := userLogin.(jwt.MapClaims)["id"].(float64)
 
 	Transaction := models.Transaction{
 		CounterQty: request.CounterQty,
@@ -110,7 +120,9 @@ func (h *handlerTransaction) CreateTransaction(c echo.Context) error {
 		Status:     request.Status,
 		Attachment: request.Attachment,
 		TourID:     request.TourID,
-		UserID:     request.UserID,
+		UserID:     int(userId),
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
 	}
 
 	data, err := h.TransactionRepository.CreateTransaction(Transaction)
@@ -168,6 +180,32 @@ func (h *handlerTransaction) UpdateTransaction(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, dto.SuccessResult{Code: http.StatusOK, Data: convertTransactionResponse(data)})
+}
+func (h *handlerTransaction) DeleteTransaction(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id"))
+	Transaction, err := h.TransactionRepository.GetTransaction(id)
+
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
+
+	data, err := h.TransactionRepository.DeleteTransaction(id, Transaction)
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, dto.SuccessResult{
+		Code: http.StatusOK,
+		Data: convertTransactionResponse(data),
+	})
+
 }
 
 func convertTransactionResponse(Transaction models.Transaction) transdto.TransactionResponse {

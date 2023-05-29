@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	// "github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 )
 
@@ -24,6 +25,8 @@ func HandleTour(TourRepository repository.TourRepository) *handlerTour {
 	return &handlerTour{TourRepository}
 }
 
+var path_file = "http://localhost:5000/uploads/"
+
 func (h *handlerTour) FindTours(c echo.Context) error {
 	Tours, err := h.TourRepository.FindTours()
 
@@ -32,6 +35,10 @@ func (h *handlerTour) FindTours(c echo.Context) error {
 			Code:    http.StatusBadRequest,
 			Message: err.Error(),
 		})
+	}
+
+	for i, p := range Tours {
+		Tours[i].Image = path_file + p.Image
 	}
 
 	return c.JSON(http.StatusOK, dto.SuccessResult{
@@ -51,6 +58,8 @@ func (h *handlerTour) GetTour(c echo.Context) error {
 			Message: err.Error(),
 		})
 	}
+
+	tour.Image = path_file + tour.Image
 	return c.JSON(http.StatusOK, dto.SuccessResult{
 		Code: http.StatusOK,
 		Data: tour,
@@ -74,13 +83,29 @@ func (h *handlerTour) GetCountryTour(c echo.Context) error {
 }
 
 func (h *handlerTour) CreateTour(c echo.Context) error {
-	request := new(tourdto.CreateTour)
-	if err := c.Bind(request); err != nil {
-		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
-			Code:    http.StatusBadRequest,
-			Message: err.Error(),
-		})
+	dataFile := c.Get("dataFile").(string)
+
+	countryId, _ := strconv.Atoi(c.FormValue("country_id"))
+	day, _ := strconv.Atoi(c.FormValue("day"))
+	night, _ := strconv.Atoi(c.FormValue("night"))
+	price, _ := strconv.Atoi(c.FormValue("price"))
+	quota, _ := strconv.Atoi(c.FormValue("quota"))
+
+	request := tourdto.CreateTour{
+		Title:          c.FormValue("title"),
+		CountryID:      countryId,
+		Accomodation:   c.FormValue("accomodation"),
+		Transportation: c.FormValue("transport"),
+		Eat:            c.FormValue("eat"),
+		Day:            day,
+		Night:          night,
+		DateTrip:       c.FormValue("date_trip"),
+		Price:          price,
+		Quota:          quota,
+		Desc:           c.FormValue("description"),
+		Image:          dataFile,
 	}
+
 	validation := validator.New()
 	err := validation.Struct(request)
 
@@ -134,12 +159,55 @@ func (h *handlerTour) CreateTour(c echo.Context) error {
 		Data:    data,
 	})
 }
-func (h *handlerTour) UpdateTour(c echo.Context) error {
-	request := new(tourdto.UpdateTour)
-	if err := c.Bind(&request); err != nil {
-		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()})
+func (h *handlerTour) DeleteTour(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id"))
+	Tour, err := h.TourRepository.GetTour(id)
+
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
 	}
 
+	data, err := h.TourRepository.DeleteTour(id, Tour)
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, dto.SuccessResult{
+		Code: http.StatusOK,
+		Data: convertTourResponse(data),
+	})
+
+}
+func (h *handlerTour) UpdateTour(c echo.Context) error {
+	dataFile := c.Get("dataFile").(string)
+
+	countryId, _ := strconv.Atoi(c.FormValue("country_id"))
+	day, _ := strconv.Atoi(c.FormValue("day"))
+	night, _ := strconv.Atoi(c.FormValue("night"))
+	price, _ := strconv.Atoi(c.FormValue("price"))
+	quota, _ := strconv.Atoi(c.FormValue("quota"))
+
+	request := tourdto.UpdateTour{
+		Title:          c.FormValue("title"),
+		CountryID:      countryId,
+		Accomodation:   c.FormValue("accomodation"),
+		Transportation: c.FormValue("transport"),
+		Eat:            c.FormValue("eat"),
+		Day:            day,
+		Night:          night,
+		DateTrip:       c.FormValue("date_trip"),
+		Price:          price,
+		Quota:          quota,
+		Desc:           c.FormValue("description"),
+		Image:          dataFile,
+	}
 	id, _ := strconv.Atoi(c.Param("id"))
 
 	datas, err := h.TourRepository.GetCountryTour(request.CountryID)
@@ -163,7 +231,7 @@ func (h *handlerTour) UpdateTour(c echo.Context) error {
 	if request.CountryID != 0 {
 		tour.CountryID = request.CountryID
 	}
-	
+
 	tour.Countries = datas
 
 	if request.Accomodation != "" {

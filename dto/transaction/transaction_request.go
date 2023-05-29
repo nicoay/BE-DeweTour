@@ -6,7 +6,7 @@ type CreateTransaction struct {
 	Status     string `json:"status" form:"status" gorm:"type:varchar(255)" validate:"required"`
 	Attachment string `json:"attachment" form:"attachment" gorm:"type:varchar(255)" validate:"required"`
 	TourID     int    `json:"tour_id" form:"tour_id" validate:"required"`
-	UserID     int    `json:"user_id" form:"user_id" validate:"required"`
+	UserID     int    `json:"user_id" form:"user_id"`
 }
 
 type UpdateTransaction struct {

@@ -53,11 +53,27 @@ func (h *handlerAuth) Register(c echo.Context) error {
 
 	data, err := h.AuthRepository.Register(user)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, resultdto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()})
+		return c.JSON(http.StatusBadRequest, resultdto.ErrorResult{Code: http.StatusBadRequest, Message: "Email sama atau sudah terdaftar"})
 	}
+	claims := jwt.MapClaims{}
+	claims["id"] = user.ID
+	claims["exp"] = time.Now().Add(time.Hour * 2).Unix()
+
+	token, errGenerate := jwtToken.GenerateToken(&claims)
+	if errGenerate != nil {
+		log.Println(errGenerate, "ini generae")
+		return echo.NewHTTPError(http.StatusUnauthorized)
+	}
+
+	registerResponse := authdto.RegisterResponse{
+		Email:    user.Email,
+		Token:    token,
+		Response: data,
+	}
+
 	return c.JSON(http.StatusOK, resultdto.SuccessResult{
 		Code: http.StatusOK,
-		Data: data,
+		Data: registerResponse,
 	})
 }
 
@@ -112,3 +128,21 @@ func (h *handlerAuth) Login(c echo.Context) error {
 		Data: loginResponse,
 	})
 }
+
+// func convertAuthResponse(user models.User) tourdto.TourResponse {
+// 	return tourdto.TourResponse{
+// 		Title:          tour.Title,
+// 		CountryID:      tour.CountryID,
+// 		Countries:      tour.Countries,
+// 		Accomodation:   tour.Accomodation,
+// 		Transportation: tour.Transportation,
+// 		Eat:            tour.Eat,
+// 		Day:            tour.Day,
+// 		Night:          tour.Night,
+// 		DateTrip:       tour.DateTrip,
+// 		Price:          tour.Price,
+// 		Quota:          tour.Quota,
+// 		Desc:           tour.Desc,
+// 		Image:          tour.Image,
+// 	}
+// }

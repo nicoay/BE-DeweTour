@@ -46,7 +46,7 @@ func (r *repository) CreateTransaction(Transaction models.Transaction) (models.T
 }
 
 func (r *repository) UpdateTransaction(trans models.Transaction) (models.Transaction, error) {
-	err := r.db.Save(&trans).Error
+	err := r.db.Preload("User").Preload("Tour.Countries").Save(&trans).Error
 	return trans, err
 }
 

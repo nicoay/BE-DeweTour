@@ -2,7 +2,7 @@ package userdto
 
 type CreateUser struct {
 	Name     string `json:"fullName" form:"fullName" validate:"required"`
-	Email    string `json:"email" form:"email" validate:"required"`
+	Email    string `json:"email" form:"email" validate:"required"  binding:"required, email" gorm:"unique; not null"`
 	Password string `json:"password" form:"password" validate:"required"`
 	Phone    string `json:"phone" form:"phone" validate:"required"`
 	Address  string `json:"address" form:"address" validate:"required"`

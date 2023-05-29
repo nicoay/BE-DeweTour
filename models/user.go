@@ -3,9 +3,9 @@ package models
 import "time"
 
 type User struct {
-	ID          int                   `json:"id"`
+	ID          int                   `json:"id" gorm:"primary_key:auto_increment"`
 	Name        string                `json:"fullName" form:"fullName" gorm:"varchar(255)"`
-	Email       string                `json:"email" form:"email" gorm:"varchar(255)"`
+	Email       string                `json:"email" form:"email" binding:"required, email" gorm:"unique; not null"`
 	Password    string                `json:"password" form:"password" gorm:"varchar(255)"`
 	Phone       string                `json:"phone" form:"phone" gorm:"varchar(255)"`
 	Address     string                `json:"address" form:"address" gorm:"varchar(255)"`
