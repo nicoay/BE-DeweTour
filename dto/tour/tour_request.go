@@ -11,6 +11,7 @@ type CreateTour struct {
 	DateTrip       string `json:"date_trip" form:"date_trip" gorm:"type:varchar(255)" validate:"required"`
 	Price          int    `json:"price" form:"price" validate:"required"`
 	Quota          int    `json:"quota" form:"quota" validate:"required"`
+	QuotaCurrent   int    `json:"quota_current" form:"quota_current" validate:"required"`
 	Desc           string `json:"description" form:"description" gorm:"type:varchar(255)" validate:"required"`
 	Image          string `json:"image" form:"image" gorm:"type:varchar(255)" validate:"required"`
 }
@@ -26,6 +27,7 @@ type UpdateTour struct {
 	DateTrip       string `json:"date_trip" form:"date_trip" gorm:"type:varchar(255)" validate:"required"`
 	Price          int    `json:"price" form:"price" validate:"required"`
 	Quota          int    `json:"quota" form:"quota" validate:"required"`
+	QuotaCurrent   int    `json:"quota_current" form:"quota_current" validate:"required"`
 	Desc           string `json:"description" form:"description" gorm:"type:varchar(255)" validate:"required"`
 	Image          string `json:"image" form:"image" gorm:"type:varchar(255)" validate:"required"`
 }

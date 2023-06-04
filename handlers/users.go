@@ -128,6 +128,9 @@ func (h *handlerUser) UpdateUser(c echo.Context) error {
 	if request.Address != "" {
 		user.Address = request.Address
 	}
+	if request.Role != "" {
+		user.Role = request.Role
+	}
 
 	data, err := h.UserRepository.UpdateUser(user)
 	if err != nil {

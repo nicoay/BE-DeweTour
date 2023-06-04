@@ -15,6 +15,6 @@ func ToursRoute(e *echo.Group) {
 	e.GET("/tours", h.FindTours)
 	e.POST("/tour", middleware.Auth(middleware.UploadFile(h.CreateTour)))
 	e.GET("/tour/:id", h.GetTour)
-	e.PATCH("/tour/:id", middleware.Auth(middleware.UploadFile(h.UpdateTour)))
+	e.PATCH("/tour/:id", middleware.Auth(h.UpdateTour))
 	e.DELETE("/tour/:id", middleware.Auth(h.DeleteTour))
 }

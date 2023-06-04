@@ -186,14 +186,12 @@ func (h *handlerTour) DeleteTour(c echo.Context) error {
 
 }
 func (h *handlerTour) UpdateTour(c echo.Context) error {
-	dataFile := c.Get("dataFile").(string)
-
 	countryId, _ := strconv.Atoi(c.FormValue("country_id"))
 	day, _ := strconv.Atoi(c.FormValue("day"))
 	night, _ := strconv.Atoi(c.FormValue("night"))
 	price, _ := strconv.Atoi(c.FormValue("price"))
 	quota, _ := strconv.Atoi(c.FormValue("quota"))
-
+	quotaCurrent, _ := strconv.Atoi(c.FormValue("quota_current"))
 	request := tourdto.UpdateTour{
 		Title:          c.FormValue("title"),
 		CountryID:      countryId,
@@ -205,8 +203,8 @@ func (h *handlerTour) UpdateTour(c echo.Context) error {
 		DateTrip:       c.FormValue("date_trip"),
 		Price:          price,
 		Quota:          quota,
+		QuotaCurrent:   quotaCurrent,
 		Desc:           c.FormValue("description"),
-		Image:          dataFile,
 	}
 	id, _ := strconv.Atoi(c.Param("id"))
 
@@ -220,9 +218,36 @@ func (h *handlerTour) UpdateTour(c echo.Context) error {
 	}
 
 	tour, err := h.TourRepository.GetTour(id)
+
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()})
 	}
+
+	quotas := tour.Quota
+
+	if quotaCurrent > quotas {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: "QuotaCurrent cannot exceed Quota",
+		})
+	}
+
+	if quotas <= tour.QuotaCurrent {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: "Quota already got Limit",
+		})
+	}
+	if tour.QuotaCurrent+request.QuotaCurrent > quotas {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: "Quota not enough ,please decrease your order",
+		})
+	}
+	if request.QuotaCurrent != 0 {
+		tour.QuotaCurrent = tour.QuotaCurrent + request.QuotaCurrent
+	}
+	// fmt.Println(tour.QuotaCurrent)
 
 	if request.Title != "" {
 		tour.Title = request.Title
@@ -265,12 +290,6 @@ func (h *handlerTour) UpdateTour(c echo.Context) error {
 	if request.Image != "" {
 		tour.Image = request.Image
 	}
-	// datas, err := h.TourRepository.GetCountryTour(id)
-	// fmt.Println(datas)
-
-	// if err != nil {
-	// 	return c.JSON(http.StatusBadRequest, dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()})
-	// }
 
 	data, err := h.TourRepository.UpdateTour(tour)
 	if err != nil {
@@ -293,6 +312,7 @@ func convertTourResponse(tour models.Tour) tourdto.TourResponse {
 		DateTrip:       tour.DateTrip,
 		Price:          tour.Price,
 		Quota:          tour.Quota,
+		QuotaCurrent:   tour.QuotaCurrent,
 		Desc:           tour.Desc,
 		Image:          tour.Image,
 	}

@@ -43,6 +43,41 @@ func (h *handlerTransaction) FindTransactions(c echo.Context) error {
 		Data: Transactions,
 	})
 }
+func (h *handlerTransaction) GetTourById(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id"))
+
+	tour, err := h.TransactionRepository.GetTourById(id)
+
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
+
+	tour.Image = path_file + tour.Image
+	return c.JSON(http.StatusOK, dto.SuccessResult{
+		Code: http.StatusOK,
+		Data: tour,
+	})
+}
+
+func (h *handlerTransaction) GetUser(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id"))
+
+	user, err := h.TransactionRepository.GetUser(id)
+
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
+	return c.JSON(http.StatusOK, dto.SuccessResult{
+		Code: http.StatusOK,
+		Data: user,
+	})
+}
 
 func (h *handlerTransaction) GetTransaction(c echo.Context) error {
 	id, _ := strconv.Atoi(c.Param("id"))
@@ -114,13 +149,33 @@ func (h *handlerTransaction) CreateTransaction(c echo.Context) error {
 	userLogin := c.Get("userLogin")
 	userId := userLogin.(jwt.MapClaims)["id"].(float64)
 
+	tour, err := h.TransactionRepository.GetTourById(request.TourID)
+
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
+
+	user, err := h.TransactionRepository.GetUser(int(userId))
+
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
+
 	Transaction := models.Transaction{
 		CounterQty: request.CounterQty,
 		Total:      request.Total,
 		Status:     request.Status,
 		Attachment: request.Attachment,
 		TourID:     request.TourID,
+		Tour:       tour,
 		UserID:     int(userId),
+		User:       user,
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
 	}
@@ -164,8 +219,23 @@ func (h *handlerTransaction) UpdateTransaction(c echo.Context) error {
 	}
 	// Transaction.Countries = datas
 
+	if request.CounterQty != 0 {
+		Transaction.CounterQty = request.CounterQty
+	}
+	if request.Total != 0 {
+		Transaction.Total = request.Total
+	}
 	if request.Status != "" {
 		Transaction.Status = request.Status
+	}
+	if request.Attachment != "" {
+		Transaction.Attachment = request.Attachment
+	}
+	if request.TourID != 0 {
+		Transaction.TourID = request.TourID
+	}
+	if request.UserID != 0 {
+		Transaction.UserID = request.UserID
 	}
 
 	// datas, err := h.TransactionRepository.GetCountryTransaction(id)

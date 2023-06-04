@@ -9,9 +9,9 @@ type Transaction struct {
 	Status     string               `json:"status" form:"status"`
 	Attachment string               `json:"attachment" form:"attachment"`
 	UserID     int                  `json:"id_user"`
-	User       UsersProfileResponse `json:"user" form:"user" gorm:"foreignKey:UserID"`
+	User       UsersProfileResponse `json:"user" form:"user" gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	TourID     int                  `json:"id_tour"`
-	Tour       TourResponse         `json:"tour" form:"user" gorm:"foreignKey:TourID"`
+	Tour       TourResponse         `json:"tour" form:"user" gorm:"foreignKey:TourID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	CreatedAt  time.Time            `json:"-"`
 	UpdatedAt  time.Time            `json:"-"`
 }

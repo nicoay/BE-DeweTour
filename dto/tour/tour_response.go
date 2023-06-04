@@ -14,6 +14,7 @@ type TourResponse struct {
 	DateTrip       string                 `json:"date_trip" `
 	Price          int                    `json:"price" `
 	Quota          int                    `json:"quota" `
+	QuotaCurrent   int                    `json:"quota_current" `
 	Desc           string                 `json:"description"`
 	Image          string                 `json:"image"`
 }
