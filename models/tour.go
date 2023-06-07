@@ -4,9 +4,9 @@ import "time"
 
 type Tour struct {
 	ID             int             `json:"id_tour" gorm:"primary_key:auto_increment"`
-	Title          string          `json:"title" form:"title" gorm:"type:varchar(255)"`
+	Title          string          `json:"title" form:"title" gorm:"type:varchar(255) "`
 	CountryID      int             `json:"id_country" form:"id_country"`
-	Countries      CountryResponse `json:"country" form:"country" gorm:"foreignKey:CountryID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Countries      CountryResponse `json:"country" form:"country" gorm:"foreignKey:CountryID;constraint:OnUpdate:SET_DEFAULT,OnDelete:CASCADE;"`
 	Accomodation   string          `json:"accomodation" form:"accomodation" gorm:"type:varchar(255)"`
 	Transportation string          `json:"transport" form:"transport" gorm:"type:varchar(255)"`
 	Eat            string          `json:"eat" from:"eat" gorm:"type:varchar(255)"`

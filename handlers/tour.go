@@ -206,16 +206,17 @@ func (h *handlerTour) UpdateTour(c echo.Context) error {
 		QuotaCurrent:   quotaCurrent,
 		Desc:           c.FormValue("description"),
 	}
+
 	id, _ := strconv.Atoi(c.Param("id"))
 
-	datas, err := h.TourRepository.GetCountryTour(request.CountryID)
+	// datas, err := h.TourRepository.GetCountryTour(request.CountryID)
 
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
-			Code:    http.StatusBadRequest,
-			Message: err.Error(),
-		})
-	}
+	// if err != nil {
+	// 	return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+	// 		Code:    http.StatusBadRequest,
+	// 		Message: err.Error(),
+	// 	})
+	// }
 
 	tour, err := h.TourRepository.GetTour(id)
 
@@ -249,47 +250,47 @@ func (h *handlerTour) UpdateTour(c echo.Context) error {
 	}
 	// fmt.Println(tour.QuotaCurrent)
 
-	if request.Title != "" {
-		tour.Title = request.Title
-	}
+	// if request.Title != "" {
+	// 	tour.Title = request.Title
+	// }
 
-	if request.CountryID != 0 {
-		tour.CountryID = request.CountryID
-	}
+	// if request.CountryID != 0 {
+	// 	tour.CountryID = request.CountryID
+	// }
 
-	tour.Countries = datas
+	// tour.Countries = datas
 
-	if request.Accomodation != "" {
-		tour.Accomodation = request.Accomodation
-	}
+	// if request.Accomodation != "" {
+	// 	tour.Accomodation = request.Accomodation
+	// }
 
-	if request.Transportation != "" {
-		tour.Transportation = request.Transportation
-	}
-	if request.Eat != "" {
-		tour.Eat = request.Eat
-	}
-	if request.Day != 0 {
-		tour.Day = request.Day
-	}
-	if request.Night != 0 {
-		tour.Night = request.Night
-	}
-	if request.DateTrip != "" {
-		tour.DateTrip = request.DateTrip
-	}
-	if request.Price != 0 {
-		tour.Price = request.Price
-	}
-	if request.Quota != 0 {
-		tour.Quota = request.Quota
-	}
-	if request.Desc != "" {
-		tour.Desc = request.Desc
-	}
-	if request.Image != "" {
-		tour.Image = request.Image
-	}
+	// if request.Transportation != "" {
+	// 	tour.Transportation = request.Transportation
+	// }
+	// if request.Eat != "" {
+	// 	tour.Eat = request.Eat
+	// }
+	// if request.Day != 0 {
+	// 	tour.Day = request.Day
+	// }
+	// if request.Night != 0 {
+	// 	tour.Night = request.Night
+	// }
+	// if request.DateTrip != "" {
+	// 	tour.DateTrip = request.DateTrip
+	// }
+	// if request.Price != 0 {
+	// 	tour.Price = request.Price
+	// }
+	// if request.Quota != 0 {
+	// 	tour.Quota = request.Quota
+	// }
+	// if request.Desc != "" {
+	// 	tour.Desc = request.Desc
+	// }
+	// if request.Image != "" {
+	// 	tour.Image = request.Image
+	// }
 
 	data, err := h.TourRepository.UpdateTour(tour)
 	if err != nil {
