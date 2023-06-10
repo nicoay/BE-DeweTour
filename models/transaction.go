@@ -25,7 +25,6 @@ type TransactionResponse struct {
 	CreatedAt  time.Time    `json:"created_at"`
 	UpdatedAt  time.Time    `json:"-"`
 }
-
 func (TransactionResponse) TableName() string {
 	return "transactions"
 }
