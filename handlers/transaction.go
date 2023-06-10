@@ -5,19 +5,22 @@ import (
 	transdto "dumbmerch/dto/transaction"
 	"dumbmerch/models"
 	"dumbmerch/repository"
+	"log"
+	"os"
 	"time"
 
 	// "fmt"
 
-	// "fmt"
+	"fmt"
 	"net/http"
 	"strconv"
-
-	// "time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
+	"github.com/midtrans/midtrans-go"
+	"github.com/midtrans/midtrans-go/snap"
+	"gopkg.in/gomail.v2"
 )
 
 type handlerTransaction struct {
@@ -41,6 +44,41 @@ func (h *handlerTransaction) FindTransactions(c echo.Context) error {
 	return c.JSON(http.StatusOK, dto.SuccessResult{
 		Code: http.StatusOK,
 		Data: Transactions,
+	})
+}
+func (h *handlerTransaction) GetTourById(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id"))
+
+	tour, err := h.TransactionRepository.GetTourById(id)
+
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
+
+	tour.Image = path_file + tour.Image
+	return c.JSON(http.StatusOK, dto.SuccessResult{
+		Code: http.StatusOK,
+		Data: tour,
+	})
+}
+
+func (h *handlerTransaction) GetUser(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id"))
+
+	user, err := h.TransactionRepository.GetUser(id)
+
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
+	return c.JSON(http.StatusOK, dto.SuccessResult{
+		Code: http.StatusOK,
+		Data: user,
 	})
 }
 
@@ -79,18 +117,10 @@ func (h *handlerTransaction) GetTransaction(c echo.Context) error {
 // }
 
 func (h *handlerTransaction) CreateTransaction(c echo.Context) error {
-	dataFile := c.Get("dataFile").(string)
+	request := new(transdto.CreateTransaction)
 
-	countryQty, _ := strconv.Atoi(c.FormValue("counter_qty"))
-	total, _ := strconv.Atoi(c.FormValue("total"))
-	tourId, _ := strconv.Atoi(c.FormValue("tour_id"))
-
-	request := transdto.CreateTransaction{
-		CounterQty: countryQty,
-		Total:      total,
-		Status:     c.FormValue("status"),
-		Attachment: dataFile,
-		TourID:     tourId,
+	if err := c.Bind(request); err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()})
 	}
 	validation := validator.New()
 	err := validation.Struct(request)
@@ -100,6 +130,15 @@ func (h *handlerTransaction) CreateTransaction(c echo.Context) error {
 			Code:    http.StatusBadRequest,
 			Message: err.Error(),
 		})
+	}
+	var transactionIsMatch = false
+	var transactionId int
+	for !transactionIsMatch {
+		transactionId = int(time.Now().Unix())
+		transactionData, _ := h.TransactionRepository.GetTransaction(transactionId)
+		if transactionData.ID == 0 {
+			transactionIsMatch = true
+		}
 	}
 
 	// datas, err := h.TransactionRepository.GetCountryTransaction(request.CountryID)
@@ -114,18 +153,8 @@ func (h *handlerTransaction) CreateTransaction(c echo.Context) error {
 	userLogin := c.Get("userLogin")
 	userId := userLogin.(jwt.MapClaims)["id"].(float64)
 
-	Transaction := models.Transaction{
-		CounterQty: request.CounterQty,
-		Total:      request.Total,
-		Status:     request.Status,
-		Attachment: request.Attachment,
-		TourID:     request.TourID,
-		UserID:     int(userId),
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
-	}
-
-	data, err := h.TransactionRepository.CreateTransaction(Transaction)
+	request.Status = "pending"
+	tour, err := h.TransactionRepository.GetTourById(request.TourID)
 
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
@@ -134,53 +163,158 @@ func (h *handlerTransaction) CreateTransaction(c echo.Context) error {
 		})
 	}
 
+	user, err := h.TransactionRepository.GetUser(int(userId))
+
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
+
+	Transaction := models.Transaction{
+		ID:         transactionId,
+		CounterQty: request.CounterQty,
+		Total:      request.Total,
+		Status:     request.Status,
+		TourID:     request.TourID,
+		Tour:       tour,
+		UserID:     int(userId),
+		User:       user,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+
+	data, err := h.TransactionRepository.CreateTransaction(Transaction)
+	fmt.Println(data.TourID, "ini data create")
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
+
+	var s = snap.Client{}
+	s.New(os.Getenv("SERVER_KEY"), midtrans.Sandbox)
+
+	req := &snap.Request{
+		TransactionDetails: midtrans.TransactionDetails{
+			OrderID:  strconv.Itoa(data.ID),
+			GrossAmt: int64(data.Total),
+		},
+
+		CreditCard: &snap.CreditCardDetails{
+			Secure: true,
+		},
+		CustomerDetail: &midtrans.CustomerDetails{
+			FName: data.User.Name,
+			Email: data.User.Email,
+			Phone: data.User.Phone,
+		},
+	}
+
+	snapResp, _ := s.CreateTransaction(req)
+
 	return c.JSON(http.StatusOK, dto.SuccessResult{
-		Code:    http.StatusOK,
-		Message: "Success Add Data",
-		Data:    data,
+		Code: http.StatusOK,
+		Data: snapResp,
+	})
+}
+func (h *handlerTransaction) Notification(c echo.Context) error {
+	var notificationPayload map[string]interface{}
+
+	if err := c.Bind(&notificationPayload); err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
+
+	transactionStatus := notificationPayload["transaction_status"].(string)
+	fraudstatus := notificationPayload["fraud_status"].(string)
+	transId := notificationPayload["order_id"].(string)
+
+	trans_id, _ := strconv.Atoi(transId)
+	fmt.Println("ini notif", notificationPayload)
+	fmt.Println("ini notif", trans_id)
+	transaction, _ := h.TransactionRepository.GetTransaction(trans_id)
+
+	if transactionStatus == "capture" {
+		if fraudstatus == "challange" {
+			h.TransactionRepository.UpdateTransaction("pending", trans_id)
+		} else if fraudstatus == "accept" {
+			SendMail("success", transaction)
+			h.TransactionRepository.UpdateTransaction("success", trans_id)
+		}
+	} else if transactionStatus == "settlement" {
+		SendMail("success", transaction)
+		h.TransactionRepository.UpdateTransaction("success", trans_id)
+	} else if transactionStatus == "deny" {
+		h.TransactionRepository.UpdateTransaction("failed", trans_id)
+	} else if transactionStatus == "cancel" || transactionStatus == "expire" {
+		h.TransactionRepository.UpdateTransaction("failed", trans_id)
+	} else if transactionStatus == "pending" {
+		h.TransactionRepository.UpdateTransaction("pending", trans_id)
+	}
+
+	return c.JSON(http.StatusOK, dto.SuccessResult{
+		Code: http.StatusOK,
+		Data: notificationPayload,
 	})
 }
 
-func (h *handlerTransaction) UpdateTransaction(c echo.Context) error {
-	request := new(transdto.UpdateTransaction)
-	if err := c.Bind(&request); err != nil {
-		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()})
+func SendMail(status string, transaction models.Transaction) {
+	if status != transaction.Status && (status == "success") {
+		var CONFIG_SMTP_HOST = "smtp.gmail.com"
+		var CONFIG_SMTP_PORT = 587
+		var CONFIG_SENDER_NAME = "Dewe Tour <skadskuds.f@gmail.com>"
+		var CONFIG_AUTH_EMAIL = os.Getenv("EMAIL_SYSTEM")
+		var CONFIG_AUTH_PASSWORD = os.Getenv("PASSWORD_SYSTEM")
+
+		var tourName = transaction.Tour.Title
+		var total = strconv.Itoa(transaction.Total)
+
+		mailer := gomail.NewMessage()
+		mailer.SetHeader("From", CONFIG_SENDER_NAME)
+		mailer.SetHeader("To", transaction.User.Email)
+		mailer.SetHeader("Subject", "Transaction Success")
+		mailer.SetBody("text/html", fmt.Sprintf(`<!DOCTYPE html>
+		<html lang="en">
+		  <head>
+		  <meta charset="UTF-8" />
+		  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		  <title>Document</title>
+		  <style>
+			h1 {
+			color: brown;
+			}
+		  </style>
+		  </head>
+		  <body>
+		  <h2>Product payment :</h2>
+		  <ul style="list-style-type:none;">
+			<li>Name : %s</li>
+			<li>Total payment: Rp.%s</li>
+			<li>Status : <b>%s</b></li>
+		  </ul>
+		  </body>
+		</html>`, tourName, total, status))
+
+		dialer := gomail.NewDialer(
+			CONFIG_SMTP_HOST,
+			CONFIG_SMTP_PORT,
+			CONFIG_AUTH_EMAIL,
+			CONFIG_AUTH_PASSWORD,
+		)
+
+		err := dialer.DialAndSend(mailer)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
 	}
-
-	id, _ := strconv.Atoi(c.Param("id"))
-
-	// datas, err := h.TransactionRepository.GetCountryTransaction(request.CountryID)
-
-	// if err != nil {
-	// 	return c.JSON(http.StatusBadRequest, dto.ErrorResult{
-	// 		Code:    http.StatusBadRequest,
-	// 		Message: err.Error(),
-	// 	})
-	// }
-
-	Transaction, err := h.TransactionRepository.GetTransaction(id)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()})
-	}
-	// Transaction.Countries = datas
-
-	if request.Status != "" {
-		Transaction.Status = request.Status
-	}
-
-	// datas, err := h.TransactionRepository.GetCountryTransaction(id)
-
-	// if err != nil {
-	// 	return c.JSON(http.StatusBadRequest, dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()})
-	// }
-
-	data, err := h.TransactionRepository.UpdateTransaction(Transaction)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()})
-	}
-
-	return c.JSON(http.StatusOK, dto.SuccessResult{Code: http.StatusOK, Data: convertTransactionResponse(data)})
 }
+
 func (h *handlerTransaction) DeleteTransaction(c echo.Context) error {
 	id, _ := strconv.Atoi(c.Param("id"))
 	Transaction, err := h.TransactionRepository.GetTransaction(id)
@@ -213,8 +347,8 @@ func convertTransactionResponse(Transaction models.Transaction) transdto.Transac
 		CounterQty: Transaction.CounterQty,
 		Total:      Transaction.Total,
 		Status:     Transaction.Status,
-		Attachment: Transaction.Attachment,
-		TourID:     Transaction.TourID,
-		UserID:     Transaction.UserID,
+
+		TourID: Transaction.TourID,
+		UserID: Transaction.UserID,
 	}
 }

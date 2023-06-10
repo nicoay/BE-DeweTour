@@ -14,4 +14,6 @@ type UpdateUser struct {
 	Password string `json:"password" form:"password" validate:"required"`
 	Phone    string `json:"phone" form:"phone" validate:"required"`
 	Address  string `json:"address" form:"address" validate:"required"`
+	Role     string `json:"role" form:"role" validate:"required"`
+	Picture  string `json:"picture" form:"picture"`
 }

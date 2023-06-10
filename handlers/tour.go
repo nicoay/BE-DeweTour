@@ -90,6 +90,7 @@ func (h *handlerTour) CreateTour(c echo.Context) error {
 	night, _ := strconv.Atoi(c.FormValue("night"))
 	price, _ := strconv.Atoi(c.FormValue("price"))
 	quota, _ := strconv.Atoi(c.FormValue("quota"))
+	quotaCurrent, _ := strconv.Atoi(c.FormValue("quota_current"))
 
 	request := tourdto.CreateTour{
 		Title:          c.FormValue("title"),
@@ -102,6 +103,7 @@ func (h *handlerTour) CreateTour(c echo.Context) error {
 		DateTrip:       c.FormValue("date_trip"),
 		Price:          price,
 		Quota:          quota,
+		QuotaCurrent:   quotaCurrent,
 		Desc:           c.FormValue("description"),
 		Image:          dataFile,
 	}
@@ -138,6 +140,7 @@ func (h *handlerTour) CreateTour(c echo.Context) error {
 		DateTrip:       request.DateTrip,
 		Price:          request.Price,
 		Quota:          request.Quota,
+		QuotaCurrent:   request.QuotaCurrent,
 		Desc:           request.Desc,
 		Image:          request.Image,
 		CreatedAt:      time.Now(),
@@ -186,14 +189,12 @@ func (h *handlerTour) DeleteTour(c echo.Context) error {
 
 }
 func (h *handlerTour) UpdateTour(c echo.Context) error {
-	dataFile := c.Get("dataFile").(string)
-
 	countryId, _ := strconv.Atoi(c.FormValue("country_id"))
 	day, _ := strconv.Atoi(c.FormValue("day"))
 	night, _ := strconv.Atoi(c.FormValue("night"))
 	price, _ := strconv.Atoi(c.FormValue("price"))
 	quota, _ := strconv.Atoi(c.FormValue("quota"))
-
+	quotaCurrent, _ := strconv.Atoi(c.FormValue("quota_current"))
 	request := tourdto.UpdateTour{
 		Title:          c.FormValue("title"),
 		CountryID:      countryId,
@@ -205,71 +206,93 @@ func (h *handlerTour) UpdateTour(c echo.Context) error {
 		DateTrip:       c.FormValue("date_trip"),
 		Price:          price,
 		Quota:          quota,
+		QuotaCurrent:   quotaCurrent,
 		Desc:           c.FormValue("description"),
-		Image:          dataFile,
 	}
+
 	id, _ := strconv.Atoi(c.Param("id"))
 
-	datas, err := h.TourRepository.GetCountryTour(request.CountryID)
+	// datas, err := h.TourRepository.GetCountryTour(request.CountryID)
 
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
-			Code:    http.StatusBadRequest,
-			Message: err.Error(),
-		})
-	}
+	// if err != nil {
+	// 	return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+	// 		Code:    http.StatusBadRequest,
+	// 		Message: err.Error(),
+	// 	})
+	// }
 
 	tour, err := h.TourRepository.GetTour(id)
+
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()})
 	}
 
-	if request.Title != "" {
-		tour.Title = request.Title
+	quotas := tour.Quota
+
+	if quotaCurrent > quotas {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: "QuotaCurrent cannot exceed Quota",
+		})
 	}
 
-	if request.CountryID != 0 {
-		tour.CountryID = request.CountryID
+	if quotas <= tour.QuotaCurrent {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: "Quota already got Limit",
+		})
 	}
+	if tour.QuotaCurrent+request.QuotaCurrent > quotas {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: "Quota not enough ,please decrease your order",
+		})
+	}
+	if request.QuotaCurrent != 0 {
+		tour.QuotaCurrent = tour.QuotaCurrent + request.QuotaCurrent
+	}
+	// fmt.Println(tour.QuotaCurrent)
 
-	tour.Countries = datas
+	// if request.Title != "" {
+	// 	tour.Title = request.Title
+	// }
 
-	if request.Accomodation != "" {
-		tour.Accomodation = request.Accomodation
-	}
+	// if request.CountryID != 0 {
+	// 	tour.CountryID = request.CountryID
+	// }
 
-	if request.Transportation != "" {
-		tour.Transportation = request.Transportation
-	}
-	if request.Eat != "" {
-		tour.Eat = request.Eat
-	}
-	if request.Day != 0 {
-		tour.Day = request.Day
-	}
-	if request.Night != 0 {
-		tour.Night = request.Night
-	}
-	if request.DateTrip != "" {
-		tour.DateTrip = request.DateTrip
-	}
-	if request.Price != 0 {
-		tour.Price = request.Price
-	}
-	if request.Quota != 0 {
-		tour.Quota = request.Quota
-	}
-	if request.Desc != "" {
-		tour.Desc = request.Desc
-	}
-	if request.Image != "" {
-		tour.Image = request.Image
-	}
-	// datas, err := h.TourRepository.GetCountryTour(id)
-	// fmt.Println(datas)
+	// tour.Countries = datas
 
-	// if err != nil {
-	// 	return c.JSON(http.StatusBadRequest, dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()})
+	// if request.Accomodation != "" {
+	// 	tour.Accomodation = request.Accomodation
+	// }
+
+	// if request.Transportation != "" {
+	// 	tour.Transportation = request.Transportation
+	// }
+	// if request.Eat != "" {
+	// 	tour.Eat = request.Eat
+	// }
+	// if request.Day != 0 {
+	// 	tour.Day = request.Day
+	// }
+	// if request.Night != 0 {
+	// 	tour.Night = request.Night
+	// }
+	// if request.DateTrip != "" {
+	// 	tour.DateTrip = request.DateTrip
+	// }
+	// if request.Price != 0 {
+	// 	tour.Price = request.Price
+	// }
+	// if request.Quota != 0 {
+	// 	tour.Quota = request.Quota
+	// }
+	// if request.Desc != "" {
+	// 	tour.Desc = request.Desc
+	// }
+	// if request.Image != "" {
+	// 	tour.Image = request.Image
 	// }
 
 	data, err := h.TourRepository.UpdateTour(tour)
@@ -293,6 +316,7 @@ func convertTourResponse(tour models.Tour) tourdto.TourResponse {
 		DateTrip:       tour.DateTrip,
 		Price:          tour.Price,
 		Quota:          tour.Quota,
+		QuotaCurrent:   tour.QuotaCurrent,
 		Desc:           tour.Desc,
 		Image:          tour.Image,
 	}

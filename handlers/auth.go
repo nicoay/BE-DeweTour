@@ -48,7 +48,9 @@ func (h *handlerAuth) Register(c echo.Context) error {
 		Email:    request.Email,
 		Password: password,
 		Phone:    request.Phone,
+		Gender:   request.Gender,
 		Address:  request.Address,
+		Role:     request.Role,
 	}
 
 	data, err := h.AuthRepository.Register(user)
@@ -56,7 +58,7 @@ func (h *handlerAuth) Register(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, resultdto.ErrorResult{Code: http.StatusBadRequest, Message: "Email sama atau sudah terdaftar"})
 	}
 	claims := jwt.MapClaims{}
-	claims["id"] = user.ID
+	claims["id"] = data.ID
 	claims["exp"] = time.Now().Add(time.Hour * 2).Unix()
 
 	token, errGenerate := jwtToken.GenerateToken(&claims)
@@ -109,6 +111,7 @@ func (h *handlerAuth) Login(c echo.Context) error {
 	// generate token
 	claims := jwt.MapClaims{}
 	claims["id"] = user.ID
+	claims["email"] = user.Email
 	claims["exp"] = time.Now().Add(time.Hour * 2).Unix()
 
 	token, errGenerate := jwtToken.GenerateToken(&claims)
@@ -129,20 +132,24 @@ func (h *handlerAuth) Login(c echo.Context) error {
 	})
 }
 
-// func convertAuthResponse(user models.User) tourdto.TourResponse {
-// 	return tourdto.TourResponse{
-// 		Title:          tour.Title,
-// 		CountryID:      tour.CountryID,
-// 		Countries:      tour.Countries,
-// 		Accomodation:   tour.Accomodation,
-// 		Transportation: tour.Transportation,
-// 		Eat:            tour.Eat,
-// 		Day:            tour.Day,
-// 		Night:          tour.Night,
-// 		DateTrip:       tour.DateTrip,
-// 		Price:          tour.Price,
-// 		Quota:          tour.Quota,
-// 		Desc:           tour.Desc,
-// 		Image:          tour.Image,
-// 	}
-// }
+func (h *handlerAuth) CheckAuth(c echo.Context) error {
+	userLogin := c.Get("userLogin")
+	userId := userLogin.(jwt.MapClaims)["id"].(float64)
+
+	user, _ := h.AuthRepository.CheckAuth(int(userId))
+
+	return c.JSON(http.StatusOK, resultdto.SuccessResult{Code: http.StatusOK, Data: convertAuthResponse(user)})
+}
+
+func convertAuthResponse(user models.User) authdto.CheckAuthResponse {
+	return authdto.CheckAuthResponse{
+		ID:          user.ID,
+		Name:        user.Name,
+		Email:       user.Email,
+		Phone:       user.Phone,
+		Address:     user.Address,
+		Gender:      user.Gender,
+		Transaction: user.Transaction,
+		Role:        user.Role,
+	}
+}

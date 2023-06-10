@@ -3,7 +3,7 @@ package mysql
 import (
 	"fmt"
 
-	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -13,9 +13,14 @@ var DB *gorm.DB
 
 func DatabaseConnection() {
 	var err error
-	dsn := "root:@tcp(localhost:3306)/dumbmerch?charset=utf8mb4&parseTime=True&loc=Local"
+	var DB_HOST = "localhost"
+	var DB_USER = "postgres"
+	var DB_PASSWORD = "167669123"
+	var DB_NAME = "dumbmerch"
+	var DB_PORT = "5432"
 
-	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s", DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT)
+	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
 		panic(err)

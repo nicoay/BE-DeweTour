@@ -97,17 +97,20 @@ func (h *handlerUser) CreateUser(c echo.Context) error {
 	})
 }
 func (h *handlerUser) UpdateUser(c echo.Context) error {
-	request := new(userdto.UpdateUser)
-	if err := c.Bind(request); err != nil {
-		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()})
-	}
-
+	dataFile := c.Get("dataFile").(string)
 	id, _ := strconv.Atoi(c.Param("id"))
 
 	user, err := h.UserRepository.GetUserById(id)
 
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()})
+	}
+	request := userdto.UpdateUser{
+		Name:    c.FormValue("name"),
+		Email:   c.FormValue("email"),
+		Phone:   c.FormValue("phone"),
+		Address: c.FormValue("address"),
+		Picture: dataFile,
 	}
 
 	if request.Name != "" {
@@ -127,6 +130,12 @@ func (h *handlerUser) UpdateUser(c echo.Context) error {
 	}
 	if request.Address != "" {
 		user.Address = request.Address
+	}
+	if request.Picture != "" {
+		user.Picture = request.Picture
+	}
+	if request.Role != "" {
+		user.Role = request.Role
 	}
 
 	data, err := h.UserRepository.UpdateUser(user)
